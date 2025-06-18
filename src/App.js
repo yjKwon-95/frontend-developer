@@ -1,5 +1,4 @@
 import {useState, useEffect} from 'react'
-import logo from './logo.svg';
 import Todo from './Todo';
 import AddTodo from './AddTodo';
 import {
