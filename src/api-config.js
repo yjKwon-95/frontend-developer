@@ -22,7 +22,7 @@ const hostname = window && window.location && window.location.hostname;
 
 //http://loaclhost:10000
 //hostname -> localhost
-if(hostname == "localhost"){
+if(hostname === "localhost"){
     backendHost = "http://localhost:5000"
 }else{
     backendHost = "https://api.springbootkyj.store";
