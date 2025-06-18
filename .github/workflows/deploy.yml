@@ -36,7 +36,7 @@ jobs : #실행할 job들을 정의하는 영역
       # react-eb-final 폴더 전체를 zip파일로 압축
       # 백엔드와 다르게 파일들을 압축하여 배포해야 한다.
       - name : Archive react-eb-final folder
-        run : zip -r react-eb-final.zip react-eb-final
+        run : zip -r ../react-eb-final.zip ./*
   
       # EB에 배포하기
       - name : Deploy to Elastic Beanstalk
