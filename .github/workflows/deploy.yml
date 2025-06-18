@@ -1,51 +1,66 @@
-name : React App Depoly to EB
+name: React App Deploy to EB
 
 # 현재 스크립트가 동작하는 시점이 언제냐?
 # main 브랜치에 push가 일어날 때
-on: #트리거 이벤트 설정
-  push : 
-    branches : [main]
-  
-# 어떤 작업을 할것인가? 
-jobs : #실행할 job들을 정의하는 영역
-  deploy : # job의 이름(이름 임의로 지정가능)
-    runs-on : ubuntu-latest # github가 제공하는 최신 Ubuntu VM(가상머신)에서 실행된다
+on:
+  push:
+    branches: [ main ]
 
-    steps :  #job내에서 실행할 작업 단계 목록
-      - uses : actions/checkout@v3 # 현재 레포지토리의 코드를 체크아웃(다운로드)
 
-    # Node.js 환경설정
-    # node 기반의 명령어(npm, npx등)를 사용하기 위해서이다.
-      - name : Setup Node.js
-        uses : actions/setup-node@v3 #Node.js 환경 구성
-        with : #uses 사용시 옵션 파라미터 전달
-          node-version : '18'
+# 어떤 작업을 할것인가?
+jobs:
+  depoly: #job의 이름(임의로 지정 가능)
+    runs-on: ubuntu-latest #github이 제공하는 최신 Ubuntu VM에서 실행된다.
+
+    steps:
+      - uses: actions/checkout@v3 # 현재 레포지토리의 코드를 체크아웃(다운로드)
+
+      # Node.js 환경 설정
+      # node 기반의 명령어 (npm, npx 등)를 사용하기 위해서이다.
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
       # 의존성 설치하기
-      - name : Install frontend dependencies
-        run : npm install
-      
-      # 정적파일 빌드하기
-      - name : Build react name 
-        run : npm run build
-      
-      # 빌드된 정적파일을 내가 원하는 폴더로 옮긴다.     
-      - name : Move build folder into react-eb-final
-        run : mv build react-eb-final/ #빌드 파일을 react-eb-final로 옮겨줘
+      - name: Install frontend dependencies
+        run: npm install
+
+      # 정적파일 빌드
+      - name: Build react app
+        run: CI=false npm run build
+
+
+      # react-eb-final 폴더에 이미 build폴더가 있는 경우 우선 삭제한다.
+      - name : Remove old build if exists
+        run: rm -rf react-eb-final/build
+
+      # 빌드된 정적 파일을 내가 원하는 폴더로 옮긴다.
+      - name: Move build folder into react-eb-final
+        run: mv build react-eb-final/
 
       # react-eb-final 폴더 전체를 zip파일로 압축
-      # 백엔드와 다르게 파일들을 압축하여 배포해야 한다.
-      - name : Archive react-eb-final folder
-        run : zip -r ../react-eb-final.zip ./*
-  
-      # EB에 배포하기
-      - name : Deploy to Elastic Beanstalk
-        uses : einaregilsson/beanstalk-deploy@v20
-        with : 
-          aws_access_key : ${{ secrets.AWS_ACCESS_KEY_ID}}
-          aws_secret_key : ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-          application_name : TodoApplication-frontend-env
-          environment_name : TodoApplication-frontend-env-env 
-          version_label : react-eb-final-${{ github.run_number }} #github.run_number : github에서 제공하는 자동으로 증가하는 고유한 숫자
-          region : ap-northeast-2
-          deployment_package : react-eb-final.zip
+      # cd react-eb-final -> 압축 대상이 되는 폴더 안으로 이동
+      # zip -r ../react-eb-final.zip ./* -> 현재 폴더 안의 모든 파일과 폴더(./*)를
+      # 상위 디렉토리(../)에 있는 react-eb-final.zip파일로 압축한다.
+      - name: Archive react-eb-final folder
+        run: |
+          cd react-eb-final
+          zip -r ../react-eb-final.zip ./*
+
+      # EB에 배포
+      # einaregilsson/beanstalk-deploy@v20 -> github Acions에서 eb에 어플리케이션을
+      # 자동으로 배포할 수 있게 해주는 github action이다.
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v20
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+          application_name: TodoApplication-frontend-env
+          environment_name: TodoApplication-frontend-env-env
+          version_label: react-eb-final-${{ github.run_number }} #github.run_number : github에서 제공하는 자동으로 증가하는 고유한 숫자
+          region: ap-northeast-2
+          deployment_package: react-eb-final.zip
+
+      
+        
